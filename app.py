@@ -10,11 +10,11 @@ app = Flask(__name__)
 
 def get_db_connection():
     conn = psycopg2.connect(
-        host="localhost",
-        database="prime_db",
+        host=os.environ.get('DB_HOST', 'localhost'),
+        database=os.environ.get('DB_NAME', 'prime_db'),
         user=os.environ['DB_USERNAME'],
         password=os.environ['DB_PASSWORD'],
-        port=5432
+        port=int(os.environ.get('DB_PORT', 5432))
     )
     return conn
 
