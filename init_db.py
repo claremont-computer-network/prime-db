@@ -9,65 +9,66 @@ load_dotenv()
 
 # Default values for if the
 # code in the `try` block does not run.
-conn = None 
-cur = None 
+conn = None
+cur = None
 try:
-        conn = psycopg2.connect(
+    conn = psycopg2.connect(
         host="localhost",
         database="prime_db",
-        user=os.environ['DB_USERNAME'],
-        password=os.environ['DB_PASSWORD'],
-	port=5432)
+        user=os.environ["DB_USERNAME"],
+        password=os.environ["DB_PASSWORD"],
+        port=5432,
+    )
 
-        
-        cur = conn.cursor()
+    cur = conn.cursor()
 
-        cur.execute("DROP TABLE IF EXISTS belyi")
-        
-        create_script = ''' CREATE TABLE IF NOT EXISTS belyi (
+    cur.execute("DROP TABLE IF EXISTS belyi")
+
+    create_script = """ CREATE TABLE IF NOT EXISTS belyi (
                                 label varchar(100),
                                 index int NOT NULL,
                                 critical_points varchar(32672),
                                 status char(30),
-                                group_name varchar(30)) '''
-        cur.execute(create_script)
+                                group_name varchar(30)) """
+    cur.execute(create_script)
 
-        file = open('/var/www/prime.tesfaasmara.com/prime-db/belyi_data.json', "r")
+    file_path = os.getenv("BELLI_DATA_FILE")
+    if not file_path:
+        raise FileNotFoundError("BELLI_DATA_FILE environment variable must be set")
+    file = open(file_path, "r")
 
-        file_str_form = file.read()
+    file_str_form = file.read()
 
-        list_of_dict = list(eval(file_str_form))
+    list_of_dict = json.loads(file_str_form)
 
-        columns = list_of_dict[0].keys()
-        query = "INSERT INTO belyi ({}) VALUES %s".format(','.join(columns))
+    columns = list_of_dict[0].keys()
+    query = "INSERT INTO belyi ({}) VALUES %s".format(",".join(columns))
 
-        for dictionary in list_of_dict:
-                if "critical_points" not in dictionary.keys():
-                        dictionary["critical_points"] = "NULL"
-                for value in dictionary.values():
-                        if len(value) >= 1000:
-                                print(len(value))
+    for dictionary in list_of_dict:
+        if "critical_points" not in dictionary.keys():
+            dictionary["critical_points"] = "NULL"
+        for value in dictionary.values():
+            if len(value) >= 1000:
+                print(len(value))
 
-        # convert list_of_dict's values to sequence of sequences
-        values = [[value for value in dictionary.values()] for dictionary in list_of_dict]
-        print(len(values), "values")
-        print(len(columns), "keys")
-        execute_values(cur, query, values)
-        
-        # We need to commit, or save, our transactions with the database
-        conn.commit()
+    # convert list_of_dict's values to sequence of sequences
+    values = [[value for value in dictionary.values()] for dictionary in list_of_dict]
+    print(len(values), "values")
+    print(len(columns), "keys")
+    execute_values(cur, query, values)
+
+    # We need to commit, or save, our transactions with the database
+    conn.commit()
 except Exception as error:
-        print(error)
-finally: 
-        # Whether there is an exception, `finally`
-        # blocks execute regardless.
-        # Whenever we open a connection or cursor, we must close 
-        # them once done.
-        if cur is not None:
-                # This means that the cursor was opened
-                cur.close()
-        if conn is not None:
-                # This means that the connection was opened
-                conn.close()
-
-        
+    print(error)
+finally:
+    # Whether there is an exception, `finally`
+    # blocks execute regardless.
+    # Whenever we open a connection or cursor, we must close
+    # them once done.
+    if cur is not None:
+        # This means that the cursor was opened
+        cur.close()
+    if conn is not None:
+        # This means that the connection was opened
+        conn.close()
