@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=prime_db
+      - POSTGRES_USER=prime_user
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    volumes:
+      - prime-db-data:/var/lib/postgresql/data
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+      placement:
+        constraints:
+          - node.role == worker
+
+  web:
+    image: prime-db:latest
+    ports:
+      - "5000:5000"
+    environment:
+      - DB_HOST=db
+      - DB_NAME=prime_db
+      - DB_USERNAME=prime_user
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_PORT=5432
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+      placement:
+        constraints:
+          - node.role == worker
+    depends_on:
+      - db
+
+volumes:
+  prime-db-data:
